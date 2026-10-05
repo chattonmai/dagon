@@ -21,8 +21,3 @@ Open the Command Palette (`Cmd+Shift+P` on macOS, `Ctrl+Shift+P` on Windows/Linu
 | Dagon: Create New DAG | Prompts for a snake_case name and scaffolds the 4 DAG files from templates |
 | Dagon: Create New DAG From Existing | Pick an existing DAG and clone its 4 files under a new prefix |
 | Dagon: Search DAG | Pick a DAG and open all 4 of its related files at once |
-
-## Requirements
-
-- Node factories live under a `node/` directory, in a file matching the DAG prefix (e.g. `node/sfv_p7_node.go`).
-- Node map entries follow the pattern `lazyNodes["key"]`.
