@@ -1,0 +1,14 @@
+id = "dagon"
+name = "Dagon"
+version = "0.0.2"
+schema_version = 1
+authors = ["chattonmai"]
+description = "Navigate and author Go DAG pipelines"
+repository = "https://github.com/private/go-node-navigator"
+
+[language_servers.dagon]
+name = "Dagon"
+languages = ["Go"]
+
+[language_servers.dagon.language_ids]
+Go = "go"

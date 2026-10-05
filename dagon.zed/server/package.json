@@ -1,0 +1,21 @@
+{
+  "name": "dagon-zed-server",
+  "version": "0.0.2",
+  "private": true,
+  "description": "Language server bundled with the Dagon Zed extension",
+  "scripts": {
+    "build": "node esbuild.js",
+    "check": "tsc --noEmit",
+    "test": "tsc --noEmit && tsc && node --test out/engine.test.js && npm run build && node test/lsp-driver.mjs"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.19.11",
+    "typescript": "^5.3.3"
+  },
+  "license": "MIT"
+}
