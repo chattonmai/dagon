@@ -42,9 +42,7 @@ Dagon's commands are code actions, not palette commands. On a Go file in a DAG r
 - **See the task.** A code lens above each factory shows "Task N", or "No task". "Task N" opens that assignment in the task file. "No task" opens the task file.
 - **Diagnostics.** Dagon reports same-task cycles, pipeline references, missing task nodes, missing factories, missing dependencies, dependencies that run too late, unused nodes, and factory keys that do not match `newNode`. The source is `dagon`.
 - **Reorganize.** On a `*_node.go` file, run "Reorganize nodes by task".
-- **Open a DAG.** "Open DAG: <prefix>" opens the dag, pipeline, task, and node files that exist.
-- **Create a DAG.** Select a `snake_case` name in a Go buffer, then run "Create DAG from selection".
-- **Clone a DAG.** Select the new `snake_case` name, then run "Create DAG from <prefix> using selection".
+- **Create a DAG.** Select the name in a Go buffer, then run "Create DAG from selection". `dno-p5`, `"dno-p5"`, and `DNO_P5_NAME` all mean the prefix `dno_p5`, which writes `DNO_P5_NAME = "dno-p5"`.
 
 ## gopls
 

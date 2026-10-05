@@ -10,6 +10,7 @@ import {
     filePrefix,
     goModulePath,
     hoverMarkdown,
+    dagPrefixFromName,
     isSnakeName,
     memoryStore,
     normalizeDagName,
@@ -200,6 +201,14 @@ describe('names and discovery', () => {
         assert.equal(normalizeDagName('my_dag_name'), 'my_name');
         assert.equal(isSnakeName('afv_p4'), true);
         assert.equal(isSnakeName('Afv'), false);
+        assert.equal(dagPrefixFromName('dno-p5'), 'dno_p5');
+        assert.equal(dagPrefixFromName('"dno-p5"'), 'dno_p5');
+        assert.equal(dagPrefixFromName('DNO_P5_NAME'), 'dno_p5');
+        assert.equal(dagPrefixFromName('DNO_P5'), 'dno_p5');
+        assert.equal(dagPrefixFromName('dno_p5'), 'dno_p5');
+        assert.equal(dagPrefixFromName('afv_p4_dag'), 'afv_p4');
+        assert.equal(dagPrefixFromName('_NAME'), undefined);
+        assert.equal(dagPrefixFromName(''), undefined);
     });
 
     it('reads the module path and the filename prefix', () => {

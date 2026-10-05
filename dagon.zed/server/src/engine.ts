@@ -209,6 +209,23 @@ export function isSnakeName(name: string): boolean {
     return /^[a-z][a-z0-9_]*$/.test(name);
 }
 
+// Accept the file prefix (dno_p5), the constant value (dno-p5), or the
+// constant identifier (DNO_P5_NAME). Files and templates still use the prefix.
+export function dagPrefixFromName(raw: string): string | undefined {
+    let text = raw.trim().replace(/^["'`]|["'`]$/g, '');
+    const upperConst = /^[A-Z][A-Z0-9_]*$/.test(text);
+    const hyphen = /^[a-z][a-z0-9-]*$/.test(text);
+    const snake = /^[a-z][a-z0-9_]*$/.test(text);
+    if (!upperConst && !hyphen && !snake) { return undefined; }
+    if (upperConst && text.endsWith('_NAME') && text.length > '_NAME'.length) {
+        text = text.slice(0, -'_NAME'.length);
+        if (!/^[A-Z][A-Z0-9_]*$/.test(text)) { return undefined; }
+    }
+    text = text.replace(/-/g, '_').toLowerCase();
+    const name = normalizeDagName(text);
+    return isSnakeName(name) ? name : undefined;
+}
+
 export function snakeToPascal(s: string): string {
     return s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
 }

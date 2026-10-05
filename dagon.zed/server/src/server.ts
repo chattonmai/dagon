@@ -14,11 +14,10 @@ import {
     diagnosticUpdates,
     factoryAnnotations,
     filePrefix,
+    dagPrefixFromName,
     hoverMarkdown,
-    isSnakeName,
     isVendorPath,
     matchGlob,
-    normalizeDagName,
     parentDir,
     planReorder,
     referenceLocations,
@@ -261,25 +260,32 @@ async function insertConstant(prefix: string) {
 }
 
 async function createDag(name: string) {
+    const prefix = dagPrefixFromName(name);
+    if (!prefix) {
+        void connection.window.showWarningMessage(
+            'Select a DAG name such as dno-p5 or DNO_P5_NAME',
+        );
+        return;
+    }
     const dagRoot = await engine.findDagRoot();
     if (!dagRoot) {
         void connection.window.showWarningMessage('No dag/ directory found in workspace');
         return;
     }
     const modulePath = await engine.detectGoModule();
-    const templates = buildNewDagTemplates(name, modulePath);
-    const targets = dagFiles(dagRoot, name);
+    const templates = buildNewDagTemplates(prefix, modulePath);
+    const targets = dagFiles(dagRoot, prefix);
     await writeMapped({
         [targets.dag]: templates.dag,
         [targets.pipeline]: templates.pipeline,
         [targets.task]: templates.task,
         [targets.node]: templates.node,
     });
-    await insertConstant(name);
+    await insertConstant(prefix);
     for (const filePath of [targets.dag, targets.pipeline, targets.task, targets.node]) {
         await show(filePath, 0);
     }
-    void connection.window.showInformationMessage(`Created DAG "${name}" (4 files + constant)`);
+    void connection.window.showInformationMessage(`Created DAG "${prefix}" (4 files + constant)`);
 }
 
 async function cloneDag(oldPrefix: string, newName: string, sourceDagPath: string) {
@@ -311,10 +317,7 @@ async function cloneDag(oldPrefix: string, newName: string, sourceDagPath: strin
 }
 
 function dagNameFromSelection(text: string): string | undefined {
-    const trimmed = text.trim().replace(/^["'`]|["'`]$/g, '');
-    if (!isSnakeName(trimmed)) { return undefined; }
-    const name = normalizeDagName(trimmed);
-    return isSnakeName(name) ? name : undefined;
+    return dagPrefixFromName(text);
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -525,20 +528,6 @@ connection.onCodeAction(async params => {
         }
     }
 
-    const dags = await engine.findExistingDags();
-    for (const dag of dags) {
-        const targets = dagFiles(parentDir(dag.path), dag.prefix);
-        actions.push({
-            title: `Open DAG: ${dag.prefix}`,
-            kind: CodeActionKind.Refactor,
-            command: {
-                title: `Open DAG: ${dag.prefix}`,
-                command: 'dagon.openFiles',
-                arguments: [[targets.dag, targets.pipeline, targets.task, targets.node]],
-            },
-        });
-    }
-
     const name = dagNameFromSelection(doc.getText(params.range));
     if (name) {
         actions.push({
@@ -550,17 +539,6 @@ connection.onCodeAction(async params => {
                 arguments: [name],
             },
         });
-        for (const dag of dags) {
-            actions.push({
-                title: `Create DAG from ${dag.prefix} using selection`,
-                kind: CodeActionKind.Refactor,
-                command: {
-                    title: `Create DAG from ${dag.prefix} using selection`,
-                    command: 'dagon.cloneDag',
-                    arguments: [dag.prefix, name, dag.path],
-                },
-            });
-        }
     }
 
     return actions;

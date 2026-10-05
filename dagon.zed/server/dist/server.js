@@ -9016,6 +9016,24 @@ function normalizeDagName(raw) {
 function isSnakeName(name) {
   return /^[a-z][a-z0-9_]*$/.test(name);
 }
+function dagPrefixFromName(raw) {
+  let text = raw.trim().replace(/^["'`]|["'`]$/g, "");
+  const upperConst = /^[A-Z][A-Z0-9_]*$/.test(text);
+  const hyphen = /^[a-z][a-z0-9-]*$/.test(text);
+  const snake = /^[a-z][a-z0-9_]*$/.test(text);
+  if (!upperConst && !hyphen && !snake) {
+    return void 0;
+  }
+  if (upperConst && text.endsWith("_NAME") && text.length > "_NAME".length) {
+    text = text.slice(0, -"_NAME".length);
+    if (!/^[A-Z][A-Z0-9_]*$/.test(text)) {
+      return void 0;
+    }
+  }
+  text = text.replace(/-/g, "_").toLowerCase();
+  const name = normalizeDagName(text);
+  return isSnakeName(name) ? name : void 0;
+}
 function snakeToPascal(s) {
   return s.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("");
 }
@@ -10920,25 +10938,32 @@ async function insertConstant(prefix) {
   }
 }
 async function createDag(name) {
+  const prefix = dagPrefixFromName(name);
+  if (!prefix) {
+    void connection.window.showWarningMessage(
+      "Select a DAG name such as dno-p5 or DNO_P5_NAME"
+    );
+    return;
+  }
   const dagRoot = await engine.findDagRoot();
   if (!dagRoot) {
     void connection.window.showWarningMessage("No dag/ directory found in workspace");
     return;
   }
   const modulePath = await engine.detectGoModule();
-  const templates = buildNewDagTemplates(name, modulePath);
-  const targets = dagFiles(dagRoot, name);
+  const templates = buildNewDagTemplates(prefix, modulePath);
+  const targets = dagFiles(dagRoot, prefix);
   await writeMapped({
     [targets.dag]: templates.dag,
     [targets.pipeline]: templates.pipeline,
     [targets.task]: templates.task,
     [targets.node]: templates.node
   });
-  await insertConstant(name);
+  await insertConstant(prefix);
   for (const filePath of [targets.dag, targets.pipeline, targets.task, targets.node]) {
     await show(filePath, 0);
   }
-  void connection.window.showInformationMessage(`Created DAG "${name}" (4 files + constant)`);
+  void connection.window.showInformationMessage(`Created DAG "${prefix}" (4 files + constant)`);
 }
 async function cloneDag(oldPrefix, newName, sourceDagPath) {
   const dagRoot = parentDir(sourceDagPath);
@@ -10968,12 +10993,7 @@ async function cloneDag(oldPrefix, newName, sourceDagPath) {
   void connection.window.showInformationMessage(`Created DAG "${newName}" from "${oldPrefix}" (4 files + constant)`);
 }
 function dagNameFromSelection(text) {
-  const trimmed = text.trim().replace(/^["'`]|["'`]$/g, "");
-  if (!isSnakeName(trimmed)) {
-    return void 0;
-  }
-  const name = normalizeDagName(trimmed);
-  return isSnakeName(name) ? name : void 0;
+  return dagPrefixFromName(text);
 }
 connection.onInitialize((params) => {
   folders = (params.workspaceFolders ?? []).map((folder) => toPath(folder.uri));
@@ -11195,19 +11215,6 @@ connection.onCodeAction(async (params) => {
       }
     }
   }
-  const dags = await engine.findExistingDags();
-  for (const dag of dags) {
-    const targets = dagFiles(parentDir(dag.path), dag.prefix);
-    actions.push({
-      title: `Open DAG: ${dag.prefix}`,
-      kind: import_node.CodeActionKind.Refactor,
-      command: {
-        title: `Open DAG: ${dag.prefix}`,
-        command: "dagon.openFiles",
-        arguments: [[targets.dag, targets.pipeline, targets.task, targets.node]]
-      }
-    });
-  }
   const name = dagNameFromSelection(doc.getText(params.range));
   if (name) {
     actions.push({
@@ -11219,17 +11226,6 @@ connection.onCodeAction(async (params) => {
         arguments: [name]
       }
     });
-    for (const dag of dags) {
-      actions.push({
-        title: `Create DAG from ${dag.prefix} using selection`,
-        kind: import_node.CodeActionKind.Refactor,
-        command: {
-          title: `Create DAG from ${dag.prefix} using selection`,
-          command: "dagon.cloneDag",
-          arguments: [dag.prefix, name, dag.path]
-        }
-      });
-    }
   }
   return actions;
 });
